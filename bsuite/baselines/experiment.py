@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -14,8 +15,6 @@
 # limitations under the License.
 # ============================================================================
 """A simple agent-environment training loop."""
-
-# Import all packages
 
 from bsuite.baselines import base
 from bsuite.logging import terminal_logging
@@ -39,14 +38,15 @@ def run(agent: base.Agent,
   """
 
   if verbose:
-    environment = terminal_logging.wrap_environment(environment, log_every=True)
+    environment = terminal_logging.wrap_environment(
+        environment, log_every=True)  # pytype: disable=wrong-arg-types
 
   for _ in range(num_episodes):
     # Run an episode.
     timestep = environment.reset()
     while not timestep.last():
       # Generate an action from the agent's policy.
-      action = agent.policy(timestep)
+      action = agent.select_action(timestep)
 
       # Step the environment.
       new_timestep = environment.step(action)

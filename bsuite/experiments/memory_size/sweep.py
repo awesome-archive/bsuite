@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,8 +16,6 @@
 # ============================================================================
 """Sweep definition for memory_len experiment."""
 
-# Import all required packages
-
 from bsuite.experiments.memory_len import sweep as memory_len_sweep
 
 NUM_EPISODES = memory_len_sweep.NUM_EPISODES
@@ -27,3 +26,4 @@ _log_spaced.extend([12, 14, 17, 20, 25])
 _log_spaced.extend(range(30, 50, 10))
 
 SETTINGS = tuple({'num_bits': n} for n in _log_spaced)
+TAGS = ('memory',)

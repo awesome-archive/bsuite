@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,17 +16,15 @@
 # ============================================================================
 """Tests for bsuite.utils.csv_load."""
 
-# Import all required packages
-
 import random
+import sys
 
-# Internal dependencies.
-
+from absl import flags
 from absl.testing import absltest
 from bsuite.logging import csv_load
 from bsuite.logging import csv_logging
 
-
+FLAGS = flags.FLAGS
 _NUM_WRITES = 10
 
 
@@ -50,6 +49,11 @@ def generate_results(bsuite_id, results_dir):
 class CsvLoadTest(absltest.TestCase):
 
   def test_logger(self):
+    try:
+      flags.FLAGS.test_tmpdir
+    except flags.UnparsedFlagAccessError:
+      # Need to initialize flags when running `pytest`.
+      flags.FLAGS(sys.argv)
     results_dir = self.create_tempdir().full_path
     generate_results(bsuite_id='catch/0', results_dir=results_dir)
     generate_results(bsuite_id='catch/1', results_dir=results_dir)

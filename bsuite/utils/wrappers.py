@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,16 +16,15 @@
 # ============================================================================
 """bsuite logging and image observation wrappers."""
 
-# Import all packages
+from typing import Any, Dict, Sequence
 
+from bsuite import environments
 from bsuite.logging import base
 
 import dm_env
 from dm_env import specs
-
 import numpy as np
 from skimage import transform
-from typing import Sequence
 
 # Keys that are present for all experiments. These are computed from within
 # the `Logging` wrapper.
@@ -36,7 +36,7 @@ class Logging(dm_env.Environment):
   """Environment wrapper to track and log bsuite stats."""
 
   def __init__(self,
-               env: dm_env.Environment,
+               env: environments.Environment,
                logger: base.Logger,
                log_by_step: bool = False,
                log_every: bool = False):
@@ -62,6 +62,10 @@ class Logging(dm_env.Environment):
     # Most-recent-episode.
     self._episode_len = 0
     self._episode_return = 0.0
+
+  def flush(self):
+    if hasattr(self._logger, 'flush'):
+      self._logger.flush()
 
   def reset(self):
     timestep = self._env.reset()
@@ -103,6 +107,9 @@ class Logging(dm_env.Environment):
       self._episode_len = 0
       self._episode_return = 0.0
 
+    if self._episode == self._env.bsuite_num_episodes:
+      self.flush()
+
   def _log_bsuite_data(self):
     """Log summary data for bsuite."""
     data = dict(
@@ -114,10 +121,8 @@ class Logging(dm_env.Environment):
         episode_len=self._episode_len,
         episode_return=self._episode_return,
     )
-    try:
-      data.update(self._env.bsuite_info())  # pytype: disable=attribute-error
-    except AttributeError:
-      pass
+    # Environment-specific metadata used for scoring.
+    data.update(self._env.bsuite_info())
     self._logger.write(data)
 
   @property
@@ -242,11 +247,11 @@ def to_image(shape: Sequence[int], observation: np.ndarray) -> np.ndarray:
             observation.shape, shape))
 
 
-class RewardNoise(dm_env.Environment):
+class RewardNoise(environments.Environment):
   """Reward Noise environment wrapper."""
 
   def __init__(self,
-               env: dm_env.Environment,
+               env: environments.Environment,
                noise_scale: float,
                seed: int = None):
     """Builds the Reward Noise environment wrapper.
@@ -283,16 +288,33 @@ class RewardNoise(dm_env.Environment):
   def action_spec(self):
     return self._env.action_spec()
 
+  @property
+  def raw_env(self):
+    # Recursively unwrap until we reach the true 'raw' env.
+    wrapped = self._env
+    if hasattr(wrapped, 'raw_env'):
+      return wrapped.raw_env
+    return wrapped
+
+  def _step(self, action: int) -> dm_env.TimeStep:
+    raise NotImplementedError('Please call step() instead of _step().')
+
+  def _reset(self) -> dm_env.TimeStep:
+    raise NotImplementedError('Please call reset() instead of _reset().')
+
+  def bsuite_info(self) -> Dict[str, Any]:
+    return self._env.bsuite_info()
+
   def __getattr__(self, attr):
     """Delegate attribute access to underlying environment."""
     return getattr(self._env, attr)
 
 
-class RewardScale(dm_env.Environment):
+class RewardScale(environments.Environment):
   """Reward Scale environment wrapper."""
 
   def __init__(self,
-               env: dm_env.Environment,
+               env: environments.Environment,
                reward_scale: float,
                seed: int = None):
     """Builds the Reward Scale environment wrapper.
@@ -328,6 +350,23 @@ class RewardScale(dm_env.Environment):
 
   def action_spec(self):
     return self._env.action_spec()
+
+  def _step(self, action: int) -> dm_env.TimeStep:
+    raise NotImplementedError('Please call step() instead of _step().')
+
+  def _reset(self) -> dm_env.TimeStep:
+    raise NotImplementedError('Please call reset() instead of _reset().')
+
+  @property
+  def raw_env(self):
+    # Recursively unwrap until we reach the true 'raw' env.
+    wrapped = self._env
+    if hasattr(wrapped, 'raw_env'):
+      return wrapped.raw_env
+    return wrapped
+
+  def bsuite_info(self) -> Dict[str, Any]:
+    return self._env.bsuite_info()
 
   def __getattr__(self, attr):
     """Delegate attribute access to underlying environment."""

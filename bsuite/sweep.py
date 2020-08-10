@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -24,13 +25,16 @@ where i is the index of the setting in that experiments sweep.py file.
 Each bsuite_id can be used to load an environment, via the bsuite.load*
 functions.
 
-To iterate over the bsuite_ids for all experiments, use sweep.SWEEP
+To iterate over the bsuite_ids for all experiments, use `sweep.SWEEP`.
 
 To iterate over the bsuite_ids for a single experiment, use
-sweep.EXPERIMENT_NAME. For example, sweep.DISCOUNTING_CHAIN.
+`sweep.<EXPERIMENT_NAME>``. For example, `sweep.DISCOUNTING_CHAIN`.
+
+To iterate over the bsuite_ids for a single experiment type, use
+`sweep.TAGS[<EXPERIMENT_TAG>]`. For example, `sweep.TAGS['memory'].
 """
 
-# Import all packages
+from typing import Any, Dict, Mapping, Tuple
 
 from bsuite.experiments.bandit import sweep as bandit_sweep
 from bsuite.experiments.bandit_noise import sweep as bandit_noise_sweep
@@ -56,27 +60,53 @@ from bsuite.experiments.mountain_car_scale import sweep as mountain_car_scale_sw
 from bsuite.experiments.umbrella_distract import sweep as umbrella_distract_sweep
 from bsuite.experiments.umbrella_length import sweep as umbrella_length_sweep
 
-from typing import Text, Tuple
+import frozendict
 
+# Common types aliases.
+BSuiteId = str  # Experiment bsuite_ids are strings, e.g. 'deep_sea/10'.
+Tag = str  # Experiment tags are strings, e.g. 'exploration'.
+EnvKWargs = Dict[str, Any]  # Keyword arguments to environment constructors.
+
+# bsuite_ids are strings of the form {environment_name}{SEPARATOR}{index}.
 SEPARATOR = '/'
+# Exclude environment names ending with the following from the testing sweep.
+IGNORE_FOR_TESTING = ('_noise', '_scale')
+
+_SETTINGS = {}
 _SWEEP = []
+_TAGS = {}
+_TESTING = []
+_EPISODES = {}
 
-# Mapping from bsuite id to keyword arguments for the corresponding environment.
-SETTINGS = {}
 
-
-def _parse_sweep(package) -> Tuple[Text]:
-  """Returns the bsuite_id for each package."""
+def _parse_sweep(experiment_package) -> Tuple[BSuiteId, ...]:
+  """Returns the bsuite_ids for each experiment package."""
   results = []
   # package.__name__ is something like 'bsuite.experiments.bandit.sweep'
-  experiment_name = package.__name__.split('.')[-2]
-  for i, setting in enumerate(package.SETTINGS):
-    bsuite_id = experiment_name + SEPARATOR + str(i)
+  experiment_name = experiment_package.__name__.split('.')[-2]
+  eligible_for_test_sweep = not any(experiment_name.endswith(s)
+                                    for s in IGNORE_FOR_TESTING)
+
+  # Construct bsuite_ids for each setting defined by the experiment.
+  for i, setting in enumerate(experiment_package.SETTINGS):
+    bsuite_id = f'{experiment_name}{SEPARATOR}{i}'
+    if i == 0 and eligible_for_test_sweep:
+      # For each environment, add one `bsuite_id` to the TESTING sweep.
+      _TESTING.append(bsuite_id)
     results.append(bsuite_id)
-    SETTINGS[bsuite_id] = setting
+    _SETTINGS[bsuite_id] = setting
+    _EPISODES[bsuite_id] = experiment_package.NUM_EPISODES
+
+  # Add bsuite_ids to corresponding tag sweeps.
+  for tag in experiment_package.TAGS:
+    if tag not in _TAGS:
+      _TAGS[tag] = []
+    _TAGS[tag].extend(results)
   _SWEEP.extend(results)
   return tuple(results)
 
+
+# bsuite_ids broken down by environment.
 BANDIT = _parse_sweep(bandit_sweep)
 BANDIT_NOISE = _parse_sweep(bandit_noise_sweep)
 BANDIT_SCALE = _parse_sweep(bandit_scale_sweep)
@@ -101,5 +131,18 @@ MOUNTAIN_CAR_SCALE = _parse_sweep(mountain_car_scale_sweep)
 UMBRELLA_DISTRACT = _parse_sweep(umbrella_distract_sweep)
 UMBRELLA_LENGTH = _parse_sweep(umbrella_length_sweep)
 
-# Tuple containing all bsuite_id. Used for hyperparameter sweeps.
-SWEEP = tuple(_SWEEP)
+# Mapping from bsuite id to keyword arguments for the corresponding environment.
+SETTINGS: Mapping[BSuiteId, EnvKWargs] = frozendict.frozendict(**_SETTINGS)
+
+# Tuple containing all bsuite_ids. Used for hyperparameter sweeps.
+SWEEP: Tuple[BSuiteId, ...] = tuple(_SWEEP)
+
+# Mapping from tag (e.g. 'memory') to experiment `bsuite_id`s with that tag.
+TAGS: Mapping[Tag, Tuple[BSuiteId, ...]] = frozendict.frozendict(
+    **{k: tuple(v) for k, v in _TAGS.items()})
+
+# Tuple containing a representative subset bsuite_ids used for agent tests.
+TESTING: Tuple[BSuiteId, ...] = tuple(_TESTING)
+
+# Mapping from bsuite_id to bsuite_num_episodes = how many episodes to run.
+EPISODES: Mapping[BSuiteId, int] = frozendict.frozendict(**_EPISODES)

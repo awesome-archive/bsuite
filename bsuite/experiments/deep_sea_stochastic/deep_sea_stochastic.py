@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,18 +16,16 @@
 # ============================================================================
 """Stochastic Deep Sea environment."""
 
-# Import all required packages
-
-from bsuite.experiments.deep_sea import deep_sea
+from bsuite.environments import deep_sea
 from bsuite.experiments.deep_sea_stochastic import sweep
 
 
-def load(size):
+def load(size: int, seed=0):
   """Load a deep sea experiment with the prescribed settings."""
   env = deep_sea.DeepSea(
       size=size,
       deterministic=False,
-      seed=73,
+      seed=seed,
   )
   env.bsuite_num_episodes = sweep.NUM_EPISODES
   return env

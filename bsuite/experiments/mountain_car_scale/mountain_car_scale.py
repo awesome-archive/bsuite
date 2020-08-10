@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,14 +16,12 @@
 # ============================================================================
 """Mountain car scale reinforcement learning environment."""
 
-# Import all packages
-
-from bsuite.experiments.mountain_car import mountain_car
+from bsuite.environments import mountain_car
 from bsuite.experiments.mountain_car_noise import sweep
 from bsuite.utils import wrappers
 
 
-def load(reward_scale, seed):
+def load(reward_scale: float, seed: int):
   """Load a mountain_car experiment with the prescribed settings."""
   env = wrappers.RewardScale(
       env=mountain_car.MountainCar(seed=seed),

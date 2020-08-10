@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,9 +16,7 @@
 # ============================================================================
 """Plots for summary data across all experiments, e.g. the radar plot."""
 
-# Import all packages
-
-import collections
+from typing import Callable, Mapping, NamedTuple, Sequence, Union
 
 from bsuite.experiments.bandit import analysis as bandit_analysis
 from bsuite.experiments.bandit_noise import analysis as bandit_noise_analysis
@@ -49,18 +48,22 @@ import numpy as np
 import pandas as pd
 import plotnine as gg
 
-from typing import Mapping, Sequence, Text, Union
-
 
 ################################################################################
 # Summarizing scores
-BsuiteSummary = collections.namedtuple(
-    'BsuiteSummary', ['score', 'type', 'tags', 'episode'])
 
 
-def _parse_bsuite(package) -> BsuiteSummary:
+class BSuiteSummary(NamedTuple):
+  """Container for summary metadata for a given bsuite experiment."""
+  score: Callable[[pd.DataFrame], float]
+  type: str
+  tags: Sequence[str]
+  episode: int
+
+
+def _parse_bsuite(package) -> BSuiteSummary:
   """Returns a Bsuite summary from a package."""
-  return BsuiteSummary(
+  return BSuiteSummary(
       score=package.score,
       type=package.TAGS[0],
       tags=package.TAGS,
@@ -101,14 +104,13 @@ for bsuite_summary in BSUITE_INFO.values():
 def _is_finished(df: pd.DataFrame, n_min: int) -> bool:
   """Check to see if every bsuite id in the dataframe is finished."""
   # At this point we have grouped by any additional hyperparameters.
-  # Check if we have run enough episodes for every id. 1
-  # Check if we have run enough episodes for every id. 2
+  # Check if we have run enough episodes for every id.
   max_time = df.groupby('bsuite_id')['episode'].max().reset_index()
   return max_time['episode'].min() >= n_min
 
 
 def _bsuite_score_single(df: pd.DataFrame,
-                         experiment_info: Mapping[Text, BsuiteSummary],
+                         experiment_info: Mapping[str, BSuiteSummary],
                          verbose: bool = False) -> pd.DataFrame:
   """Score the bsuite across all domains for a single agent."""
   data = []
@@ -130,7 +132,7 @@ def _bsuite_score_single(df: pd.DataFrame,
 
 
 def bsuite_score(df: pd.DataFrame,
-                 sweep_vars: Sequence[Text] = None) -> pd.DataFrame:
+                 sweep_vars: Sequence[str] = None) -> pd.DataFrame:
   """Score bsuite for each experiment across hyperparameter settings."""
   score_fun = lambda x: _bsuite_score_single(x, BSUITE_INFO)
   if sweep_vars:
@@ -141,13 +143,13 @@ def bsuite_score(df: pd.DataFrame,
   # Groupby has a habit of adding meaningless columns to dataframe.
   for col in df.columns:
     if col in ['level_0', 'level_1', 'level_2']:
-      df.drop(col, axis=1, inplace=True)
+      score_df.drop(col, axis=1, inplace=True)
   return score_df
 
 
 def _summarize_single_by_tag(score_df: pd.DataFrame,
-                             unique_tags: Sequence[Text],
-                             tags_column: Text) -> pd.DataFrame:
+                             unique_tags: Sequence[str],
+                             tags_column: str) -> pd.DataFrame:
   """Takes in a single scored dataframe and averages score over tags."""
   df = score_df.copy()
   # Expand the columns of dataframe to indicate if it contains valid tag.
@@ -162,7 +164,7 @@ def _summarize_single_by_tag(score_df: pd.DataFrame,
 
 
 def ave_score_by_tag(score_df: pd.DataFrame,
-                     sweep_vars: Sequence[Text]) -> pd.DataFrame:
+                     sweep_vars: Sequence[str]) -> pd.DataFrame:
   """Takes in a bsuite scored dataframe and summarizes by tags."""
   summary_fun = lambda x: _summarize_single_by_tag(x, list(ALL_TAGS), 'tags')
   if sweep_vars:
@@ -176,7 +178,7 @@ def ave_score_by_tag(score_df: pd.DataFrame,
 # Summary plots
 
 
-def _gen_ordered_experiments() -> Sequence[Text]:
+def _gen_ordered_experiments() -> Sequence[str]:
   """Provides a list of ordered experiments for bar plot."""
   basics = ['bandit', 'mnist', 'catch', 'mountain_car', 'cartpole']
   noise = [env + '_noise' for env in basics]
@@ -192,7 +194,7 @@ _ORDERED_TYPES = [
 
 
 def _clean_bar_plot_data(df_in: pd.DataFrame,
-                         sweep_vars: Sequence[Text] = None) -> pd.DataFrame:
+                         sweep_vars: Sequence[str] = None) -> pd.DataFrame:
   """Clean the summary data for bar plot comparison of agents."""
   df = df_in.copy()
   df['env'] = pd.Categorical(
@@ -213,7 +215,7 @@ def _clean_bar_plot_data(df_in: pd.DataFrame,
 
 
 def bsuite_bar_plot(df_in: pd.DataFrame,
-                    sweep_vars: Sequence[Text] = None) -> gg.ggplot:
+                    sweep_vars: Sequence[str] = None) -> gg.ggplot:
   """Output bar plot of bsuite data."""
   df = _clean_bar_plot_data(df_in, sweep_vars)
 
@@ -228,7 +230,7 @@ def bsuite_bar_plot(df_in: pd.DataFrame,
       )
   if not all(df.finished):  # add a layer of alpha for unfinished jobs
     p += gg.aes(alpha='finished')
-    p += gg.scale_alpha_discrete([0.3, 1.0])
+    p += gg.scale_alpha_discrete(range=[0.3, 1.0])
 
   # Compute the necessary size of the plot
   if sweep_vars:
@@ -251,12 +253,12 @@ def _bar_plot_compare(df: pd.DataFrame) -> gg.ggplot:
       )
   if not all(df.finished):  # add a layer of alpha for unfinished jobs
     p += gg.aes(alpha='finished')
-    p += gg.scale_alpha_discrete([0.3, 1.0])
+    p += gg.scale_alpha_discrete(range=[0.3, 1.0])
   return p
 
 
 def bsuite_bar_plot_compare(df_in: pd.DataFrame,
-                            sweep_vars: Sequence[Text] = None) -> gg.ggplot:
+                            sweep_vars: Sequence[str] = None) -> gg.ggplot:
   """Output bar plot of bsuite data, comparing agents on each experiment."""
   df = _clean_bar_plot_data(df_in, sweep_vars)
   p = _bar_plot_compare(df)
@@ -267,8 +269,8 @@ def bsuite_bar_plot_compare(df_in: pd.DataFrame,
 
 def plot_single_experiment(
     summary_df: pd.DataFrame,
-    bsuite_env: Text,
-    sweep_vars: Sequence[Text] = None) -> Union[gg.ggplot, None]:
+    bsuite_env: str,
+    sweep_vars: Sequence[str] = None) -> Union[gg.ggplot, None]:
   """Compare score for just one experiment."""
   if len(summary_df) == 0:  # pylint:disable=g-explicit-length-test
     print('WARNING: you have no bsuite summary data, please reload.')
@@ -295,9 +297,9 @@ def _tag_pretify(tag):
 
 
 def _radar(
-    df: pd.DataFrame, ax: plt.Axes, label: Text, all_tags: Sequence[Text],
-    color: Text, alpha: float = 0.2, edge_alpha: float = 0.85, zorder: int = 2,
-    edge_style: Text = '-'):
+    df: pd.DataFrame, ax: plt.Axes, label: str, all_tags: Sequence[str],
+    color: str, alpha: float = 0.2, edge_alpha: float = 0.85, zorder: int = 2,
+    edge_style: str = '-'):
   """Plot utility for generating the underlying radar plot."""
   tmp = df.groupby('tag').mean().reset_index()
 
@@ -334,12 +336,15 @@ def _radar(
 
 
 def bsuite_radar_plot(summary_data: pd.DataFrame,
-                      sweep_vars: Sequence[Text] = None):
+                      sweep_vars: Sequence[str] = None):
   """Output a radar plot of bsuite data from bsuite_summary by tag."""
   fig = plt.figure(figsize=(8, 8), facecolor='white')
 
   ax = fig.add_subplot(111, polar=True)
-  ax.set_facecolor('white')
+  try:
+    ax.set_axis_bgcolor('white')
+  except AttributeError:
+    ax.set_facecolor('white')
   all_tags = sorted(summary_data['tag'].unique())
 
   if sweep_vars is None:

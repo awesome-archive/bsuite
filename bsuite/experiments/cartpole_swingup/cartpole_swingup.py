@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,16 +16,16 @@
 # ============================================================================
 """A swing up experiment in Cartpole."""
 
-# Import all packages
-
-from bsuite.experiments.cartpole import cartpole
+from bsuite.environments import base
+from bsuite.environments import cartpole
 from bsuite.experiments.cartpole_swingup import sweep
+
 import dm_env
 from dm_env import specs
 import numpy as np
 
 
-class CartpoleSwingup(dm_env.Environment):
+class CartpoleSwingup(base.Environment):
   """A difficult 'swing up' version of the classic Cart Pole task.
 
   In this version of the problem the pole begins downwards, and the agent must
@@ -45,7 +46,7 @@ class CartpoleSwingup(dm_env.Environment):
                seed: int = None):
     # Setup.
     self._state = cartpole.CartpoleState(0, 0, 0, 0, 0)
-    self._reset_next_step = True
+    super().__init__()
     self._rng = np.random.RandomState(seed)
     self._init_fn = lambda: self._rng.uniform(low=-init_range, high=init_range)
 
@@ -110,15 +111,21 @@ class CartpoleSwingup(dm_env.Environment):
       self._total_upright += 1
     self._raw_return += reward
     self._episode_return += reward
-    self._best_episode = max(self._episode_return, self._best_episode)
 
     is_end_of_episode = (self._state.time_elapsed > self._max_time
                          or np.abs(self._state.x) > self._x_threshold)
     if is_end_of_episode:
+      self._best_episode = max(self._episode_return, self._best_episode)
       self._reset_next_step = True
       return dm_env.termination(reward=reward, observation=self.observation)
     else:  # continuing transition.
       return dm_env.transition(reward=reward, observation=self.observation)
+
+  def _step(self, action: int) -> dm_env.TimeStep:
+    raise NotImplementedError('This environment implements its own auto-reset.')
+
+  def _reset(self) -> dm_env.TimeStep:
+    raise NotImplementedError('This environment implements its own auto-reset.')
 
   def action_spec(self):
     return specs.DiscreteArray(dtype=np.int, num_values=3, name='action')

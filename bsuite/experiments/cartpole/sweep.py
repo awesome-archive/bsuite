@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,8 +16,7 @@
 # ============================================================================
 """Sweep definition for a balancing experiment in Cartpole."""
 
-# Import all required packages
-
 NUM_EPISODES = 1000
 
 SETTINGS = tuple({'seed': n} for n in range(20))
+TAGS = ('basic', 'credit_assignment', 'generalization')

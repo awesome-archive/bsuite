@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,20 +16,19 @@
 # ============================================================================
 """bsuite adapter for OpenAI gym run-loops."""
 
-# Import all packages
+from typing import Any, Dict, Optional, Tuple, Union
 
 import dm_env
 from dm_env import specs
 import gym
 from gym import spaces
 import numpy as np
-from typing import Any, Dict, Optional, Text, Tuple, Union
 
 # OpenAI gym step format = obs, reward, is_finished, other_info
-_GymTimestep = Tuple[np.ndarray, float, bool, Dict[Text, Any]]
+_GymTimestep = Tuple[np.ndarray, float, bool, Dict[str, Any]]
 
 
-class GymWrapper(gym.Env):
+class GymFromDMEnv(gym.Env):
   """A wrapper that converts a dm_env.Environment to an OpenAI gym.Env."""
 
   metadata = {'render.modes': ['human', 'rgb_array']}
@@ -37,19 +37,23 @@ class GymWrapper(gym.Env):
     self._env = env  # type: dm_env.Environment
     self._last_observation = None  # type: Optional[np.ndarray]
     self.viewer = None
+    self.game_over = False  # Needed for Dopamine agents.
 
   def step(self, action: int) -> _GymTimestep:
     timestep = self._env.step(action)
     self._last_observation = timestep.observation
     reward = timestep.reward or 0.
+    if timestep.last():
+      self.game_over = True
     return timestep.observation, reward, timestep.last(), {}
 
   def reset(self) -> np.ndarray:
+    self.game_over = False
     timestep = self._env.reset()
     self._last_observation = timestep.observation
     return timestep.observation
 
-  def render(self, mode: Text = 'rgb_array') -> Union[np.ndarray, bool]:
+  def render(self, mode: str = 'rgb_array') -> Union[np.ndarray, bool]:
     if self._last_observation is None:
       raise ValueError('Environment not ready to render. Call reset() first.')
 
@@ -58,7 +62,9 @@ class GymWrapper(gym.Env):
 
     if mode == 'human':
       if self.viewer is None:
-        from gym.envs.classic_control import rendering  # pylint: disable=g-import-not-at-top
+        # pylint: disable=import-outside-toplevel
+        # pylint: disable=g-import-not-at-top
+        from gym.envs.classic_control import rendering
         self.viewer = rendering.SimpleImageViewer()
       self.viewer.imshow(self._last_observation)
       return self.viewer.isopen
@@ -93,3 +99,87 @@ class GymWrapper(gym.Env):
   def __getattr__(self, attr):
     """Delegate attribute access to underlying environment."""
     return getattr(self._env, attr)
+
+
+def space2spec(space: gym.Space, name: str = None):
+  """Converts an OpenAI Gym space to a dm_env spec or nested structure of specs.
+
+  Box, MultiBinary and MultiDiscrete Gym spaces are converted to BoundedArray
+  specs. Discrete OpenAI spaces are converted to DiscreteArray specs. Tuple and
+  Dict spaces are recursively converted to tuples and dictionaries of specs.
+
+  Args:
+    space: The Gym space to convert.
+    name: Optional name to apply to all return spec(s).
+
+  Returns:
+    A dm_env spec or nested structure of specs, corresponding to the input
+    space.
+  """
+  if isinstance(space, spaces.Discrete):
+    return specs.DiscreteArray(num_values=space.n, dtype=space.dtype, name=name)
+
+  elif isinstance(space, spaces.Box):
+    return specs.BoundedArray(shape=space.shape, dtype=space.dtype,
+                              minimum=space.low, maximum=space.high, name=name)
+
+  elif isinstance(space, spaces.MultiBinary):
+    return specs.BoundedArray(shape=space.shape, dtype=space.dtype, minimum=0.0,
+                              maximum=1.0, name=name)
+
+  elif isinstance(space, spaces.MultiDiscrete):
+    return specs.BoundedArray(shape=space.shape, dtype=space.dtype,
+                              minimum=np.zeros(space.shape),
+                              maximum=space.nvec, name=name)
+
+  elif isinstance(space, spaces.Tuple):
+    return tuple(space2spec(s, name) for s in space.spaces)
+
+  elif isinstance(space, spaces.Dict):
+    return {key: space2spec(value, name) for key, value in space.spaces.items()}
+
+  else:
+    raise ValueError('Unexpected gym space: {}'.format(space))
+
+
+class DMEnvFromGym(dm_env.Environment):
+  """A wrapper to convert an OpenAI Gym environment to a dm_env.Environment."""
+
+  def __init__(self, gym_env: gym.Env):
+    self.gym_env = gym_env
+    # Convert gym action and observation spaces to dm_env specs.
+    self._observation_spec = space2spec(self.gym_env.observation_space,
+                                        name='observations')
+    self._action_spec = space2spec(self.gym_env.action_space, name='actions')
+    self._reset_next_step = True
+
+  def reset(self) -> dm_env.TimeStep:
+    self._reset_next_step = False
+    observation = self.gym_env.reset()
+    return dm_env.restart(observation)
+
+  def step(self, action: int) -> dm_env.TimeStep:
+    if self._reset_next_step:
+      return self.reset()
+
+    # Convert the gym step result to a dm_env TimeStep.
+    observation, reward, done, info = self.gym_env.step(action)
+    self._reset_next_step = done
+
+    if done:
+      is_truncated = info.get('TimeLimit.truncated', False)
+      if is_truncated:
+        return dm_env.truncation(reward, observation)
+      else:
+        return dm_env.termination(reward, observation)
+    else:
+      return dm_env.transition(reward, observation)
+
+  def close(self):
+    self.gym_env.close()
+
+  def observation_spec(self):
+    return self._observation_spec
+
+  def action_spec(self):
+    return self._action_spec

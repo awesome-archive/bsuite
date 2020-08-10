@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,9 +16,7 @@
 # ============================================================================
 """Mountain car environment with noisy rewards."""
 
-# Import all required packages
-
-from bsuite.experiments.mountain_car import mountain_car
+from bsuite.environments import mountain_car
 from bsuite.experiments.mountain_car_noise import sweep
 from bsuite.utils import wrappers
 

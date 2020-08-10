@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,10 +16,7 @@
 # ============================================================================
 """Sweep definition for mnist bandit experiment."""
 
-# Import all required packages
-
 NUM_EPISODES = 10000
 
 SETTINGS = tuple({'seed': n} for n in range(20))
-
-
+TAGS = ('basic', 'generalization')

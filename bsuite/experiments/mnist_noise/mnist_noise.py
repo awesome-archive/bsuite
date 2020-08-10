@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,9 +16,7 @@
 # ============================================================================
 """MNIST bandit with noisy rewards."""
 
-# Import all required packages
-
-from bsuite.experiments.mnist import mnist
+from bsuite.environments import mnist
 from bsuite.experiments.mnist_noise import sweep
 from bsuite.utils import wrappers
 

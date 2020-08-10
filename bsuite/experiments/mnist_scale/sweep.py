@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,8 +16,6 @@
 # ============================================================================
 """Sweep definition for mnist_scale experiment."""
 
-# Import all required packages
-
 from bsuite.experiments.mnist import sweep as mnist_sweep
 
 NUM_EPISODES = mnist_sweep.NUM_EPISODES
@@ -27,4 +26,4 @@ for scale in [0.001, 0.03, 1.0, 30., 1000.]:
     _settings.append({'reward_scale': scale, 'seed': seed})
 
 SETTINGS = tuple(_settings)
-
+TAGS = ('scale', 'generalization')

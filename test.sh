@@ -1,27 +1,31 @@
+#!/bin/bash
+
+# Fail on any error.
 set -e
+# Display commands being run.
 set -x
 
-cd ~/
+# Set up a new virtual environment.
+python3 -m venv bsuite_testing
+source bsuite_testing/bin/activate
 
-rm -rf bsuite_env/
-rm -rf bsuite/
+# Install all dependencies.
+pip install --upgrade pip setuptools
+pip install .
+pip install .[baselines_jax]
+pip install .[baselines]
 
-sudo apt-get install python3-pip
-sudo pip3 install virtualenv
+# Install test dependencies.
+pip install .[testing]
 
-virtualenv -p /usr/bin/python3.6 bsuite_env
-source bsuite_env/bin/activate
+N_CPU=$(grep -c ^processor /proc/cpuinfo)
 
-git clone https://github.com/deepmind/bsuite
-pip3 install bsuite/
+# Run static type-checking.
+pytype -j "${N_CPU}" bsuite
 
-pip3 install nose
-nosetests bsuite/bsuite/tests/environments_test.py
+# Run all tests.
+pytest -n "${N_CPU}" bsuite
 
-python3 -c "import bsuite
-env = bsuite.load_from_id('catch/0')
-env.reset()"
-
+# Clean-up.
 deactivate
-rm -rf bsuite_env/
-rm -rf bsuite/
+rm -rf bsuite_testing/

@@ -1,6 +1,9 @@
 # Behaviour Suite for Reinforcement Learning (`bsuite`)
 
-# ![radar plot](reports/standalone/images/radar_plot.png)
+![PyPI version](https://badge.fury.io/py/bsuite.svg)
+![pytest](https://github.com/deepmind/bsuite/workflows/pytest/badge.svg)
+
+![radar plot](reports/standalone/images/radar_plot.png)
 
 ## Introduction
 
@@ -40,49 +43,57 @@ This means any experiment will automatically output data in the correct format
 for analysis using the notebook, without any constraints on the structure of
 agents or algorithms.
 
+We collate all of the results and analysis in a pre-made jupyter notebook [bit.ly/bsuite-colab](https://bit.ly/bsuite-colab).
+
 ## Getting started
 
-If you are new to `bsuite` you can get started in our [colab tutorial](https://colab.research.google.com/drive/1rU20zJ281sZuMD1DHbsODFr1DbASL0RH).
+If you are new to `bsuite` you can get started in our
+[colab tutorial](https://colab.research.google.com/drive/1rU20zJ281sZuMD1DHbsODFr1DbASL0RH).
 This Jupyter notebook is hosted with a free cloud server, so you can start
-coding right away without installing anything on your machine. After this, 
-you can follow the instructions below to get `bsuite` running on your local machine.
+coding right away without installing anything on your machine. After this, you
+can follow the instructions below to get `bsuite` running on your local machine.
 
 ### Installation
 
-We have tested `bsuite`on Python 3.6. We do not attempt to maintain a working
-version for Python 2.7.
+We have tested `bsuite` on Python 3.6 & 3.7. To install the dependencies:
 
-To install `bsuite`, run the command
+1.  **Optional**: We recommend using a
+    [Python virtual environment](https://docs.python.org/3/tutorial/venv.html)
+    to manage your dependencies, so as not to clobber your system installation:
 
-```
-pip install git+git://github.com/deepmind/bsuite.git
-```
+    ```bash
+    python3 -m venv bsuite
+    source bsuite/bin/activate
+    pip install --upgrade pip setuptools
+    ```
 
-or clone the repository and run
+1.  Install `bsuite` directly from [PyPI](https://pypi.org/project/bsuite):
 
-```
-pip install bsuite/
-```
+    ```bash
+    pip install bsuite
+    ```
 
-To install the package while being able to edit the code (see baselines below),
-run
+1.  **Optional**: To also install dependencies for the [`baselines`] examples
+    (excluding OpenAI and Dopamine examples), run:
 
-```
-pip install -e bsuite/
-```
+    ```bash
+    pip install bsuite[baselines]
+    ```
 
-To also install dependencies for the `baselines/` examples (excluding Gym and
-Dopamine examples), install with:
+## Environments
 
-```
-pip install -e bsuite[baselines]
-```
+Complete descriptions of each environment and their corresponding experiments
+are found in the [`analysis/results.ipynb`] Jupyter notebook.
+
+These environments all have small observation sizes, allowing for reasonable performance with a small network on a CPU.
 
 ### Loading an environment
 
 Environments are specified by a `bsuite_id` string, for example `"deep_sea/7"`.
 This string denotes the experiment and the (index of the) environment settings
 to use, as described in the [technical overview section](#technical-overview).
+
+For a full description of each environment and its corresponding experiment settings, see the [paper].
 
 ```python
 import bsuite
@@ -156,10 +167,10 @@ for _ in range(env.bsuite_num_episodes):
   agent.step(timestep)
 ```
 
-### Using `bsuite` with OpenAI Gym
+### Using `bsuite` in 'OpenAI Gym' format
 
 To use `bsuite` with a codebase that uses the
-[OpenAI Gym](https://github.com/openai/gym) interface, use the `GymWrapper`
+[OpenAI Gym](https://github.com/openai/gym) interface, use the `GymFromDMEnv`
 class in [`utils/gym_wrapper.py`]:
 
 ```python
@@ -167,31 +178,19 @@ import bsuite
 from bsuite.utils import gym_wrapper
 
 env = bsuite.load_and_record_to_csv('catch/0', results_dir='/path/to/results')
-gym_env = gym_wrapper.GymWrapper(env)
+gym_env = gym_wrapper.GymFromDMEnv(env)
 ```
 
 Note that `bsuite` does not include Gym in its default dependencies, so you may
 need to pip install it separately.
 
-## Environments
-
-These environments all have small observation sizes such that you should expect
-reasonable performance running with a small network in a single process on CPU.
-
-Complete descriptions of each environment and their corresponding experiments
-are found in the [`analysis/results.ipynb`] Jupyter notebook.
-
-<!-- ### Rolling your own environment into `bsuite` -->
-<!-- Describe what API your environment needs to fulfil -->
-
 ## Baseline agents
 
-We include implementations of several common agents in the `baselines`
+We include implementations of several common agents in the [`baselines/`]
 subdirectory, along with a minimal run-loop.
 
 See the [installation](#installation) section for how to include the required
-dependencies (mainly [TensorFlow](http://tensorflow.org) and
-[Sonnet](https://github.com/deepmind/sonnet)) at install time. These
+dependencies at install time. These
 dependencies are not installed by default, since `bsuite` does not require users
 to use any specific machine learning library.
 
@@ -225,7 +224,7 @@ initialize Cloud SDK. After completing `gcloud init`, you are ready to run
 
 For this make [`run_on_gcp.sh`](run_on_gcp.sh) executable and run it:
 
-```console
+```bash
 chmod +x run_on_gcp.sh
 ./run_on_gcp.sh
 ```
@@ -237,13 +236,13 @@ local machine once it is ready. However, `ssh`ing might be convenient if you
 want to make local changes to agent and environments. In this case, after
 `ssh`ing, do
 
-```console
+```bash
 ~/bsuite_env/bin/activate
 ```
 
 to activate the virtual environment. Then you can run agents via
 
-```console
+```bash
 python ~/bsuite/bsuite/baselines/dqn/run.py --bsuite_id=SWEEP
 ```
 
@@ -254,9 +253,10 @@ for instance.
 `bsuite` comes with a ready-made analysis Jupyter notebook included in
 [`analysis/results.ipynb`]. This notebook loads and processes logged data, and
 produces the scores and plots for each experiment. We recommend using this
-notebook in conjunction with [Colaboratory](colab.research.google.com).
+notebook in conjunction with [Colaboratory](https://colab.research.google.com).
 
-We provide an example of a such `bsuite` report [here](https://colab.research.google.com/drive/1RYWJaMEHVeN8yI83QtL35GOSFQBRgLaX).
+We provide an example of a such `bsuite` report
+[here](https://colab.research.google.com/drive/1RYWJaMEHVeN8yI83QtL35GOSFQBRgLaX).
 
 ### `bsuite` Report
 
@@ -264,35 +264,36 @@ You can use `bsuite` to generate an automated 1-page appendix, that summarizes
 the core capabilities of your RL algorithm. This appendix is compatible with
 most major ML conference formats. For example output run,
 
-```console
+```bash
 pdflatex bsuite/reports/neurips_2019/neurips_2019.tex
 ```
 
 More examples of bsuite reports can be found in the `reports/` subdirectory.
 
-
 ## Citing
 
-If you use `bsuite` in your work, please cite the accompanying paper:
+If you use `bsuite` in your work, please cite the accompanying [paper]:
 
 ```bibtex
-@article{osband2019bsuite,
-         title={Behaviour Suite for Reinforcement Learning},
-         author={Osband, Ian and
-                 Doron, Yotam and
-                 Hessel, Matteo and
-                 Aslanides, John and
-                 Sezener, Eren and
-                 Saraiva, Andre and
-                 McKinney, Katrina and
-                 Lattimore, Tor and
-                 {Sz}epesv{\'a}ri, Csaba and
-                 Singh, Satinder and
-                 Van Roy, Benjamin and
-                 Sutton, Richard and
-                 Silver, David and
-                 van Hasselt, Hado},
-         year={2019},
+@inproceedings{osband2020bsuite,
+    title={Behaviour Suite for Reinforcement Learning},
+    author={Osband, Ian and
+            Doron, Yotam and
+            Hessel, Matteo and
+            Aslanides, John and
+            Sezener, Eren and
+            Saraiva, Andre and
+            McKinney, Katrina and
+            Lattimore, Tor and
+            {Sz}epesv{\'a}ri, Csaba and
+            Singh, Satinder and
+            Van Roy, Benjamin and
+            Sutton, Richard and
+            Silver, David and
+            van Hasselt, Hado},
+    booktitle={International Conference on Learning Representations},
+    year={2020},
+    url={https://openreview.net/forum?id=rygf-kSYwH}
 }
 ```
 
@@ -306,4 +307,4 @@ If you use `bsuite` in your work, please cite the accompanying paper:
 [`logging/terminal_logging.py`]: bsuite/logging/terminal_logging.py
 [`utils/gym_wrapper.py`]: bsuite/utils/gym_wrapper.py
 
-[paper]: https://arxiv.org/abs/1908.03568
+[paper]: https://openreview.net/forum?id=rygf-kSYwH

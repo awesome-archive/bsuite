@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,18 +16,16 @@
 # ============================================================================
 """Unbrella chain environment with varying distractor observations."""
 
-# Import all packages
-
+from bsuite.environments import umbrella_chain
 from bsuite.experiments.umbrella_distract import sweep
-from bsuite.experiments.umbrella_length import umbrella_length
 
 
-def load(n_distractor):
+def load(n_distractor: int, seed=0):
   """Load a deep sea experiment with the prescribed settings."""
-  env = umbrella_length.UmbrellaChain(
+  env = umbrella_chain.UmbrellaChain(
       chain_length=20,
       n_distractor=n_distractor,
-      seed=73,
+      seed=seed,
   )
   env.bsuite_num_episodes = sweep.NUM_EPISODES
   return env

@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,8 +16,7 @@
 # ============================================================================
 """Sweep definition for deep_sea experiment."""
 
-# Import all required packages
-
 NUM_EPISODES = 10000
 
 SETTINGS = tuple({'size': n} for n in range(10, 51, 2))
+TAGS = ('exploration',)

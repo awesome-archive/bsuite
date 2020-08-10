@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,24 +16,18 @@
 # ============================================================================
 """A simple agent interface."""
 
-# Import all packages
-
 import abc
 import dm_env
 
-# pylint: disable=invalid-name
 Action = int  # Only discrete-action agents for now.
-# pylint: enable=invalid-name
 
 
-class Agent(object):
-  """An agent consists of a policy and an update rule."""
-
-  __metaclass__ = abc.ABCMeta
+class Agent(abc.ABC):
+  """An agent consists of an action-selection mechanism and an update rule."""
 
   @abc.abstractmethod
-  def policy(self, timestep: dm_env.TimeStep) -> Action:
-    """A policy takes in a timestep and returns an action."""
+  def select_action(self, timestep: dm_env.TimeStep) -> Action:
+    """Takes in a timestep, samples from agent's policy, returns an action."""
 
   @abc.abstractmethod
   def update(

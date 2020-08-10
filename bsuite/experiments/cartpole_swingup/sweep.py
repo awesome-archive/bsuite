@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,11 +16,10 @@
 # ============================================================================
 """Sweep definition for a swing up experiment in Cartpole."""
 
-# Import all required packages
-
 from bsuite.experiments.cartpole import sweep as cartpole_sweep
 
 NUM_EPISODES = cartpole_sweep.NUM_EPISODES
 
 SETTINGS = tuple({'height_threshold': n / 20, 'x_reward_threshold': 1 - n / 20}
                  for n in range(20))
+TAGS = ('exploration', 'generalization')

@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,11 +16,9 @@
 # ============================================================================
 """Sweep definition for deep_sea_stochastic."""
 
-# Import all required packages
-
 from bsuite.experiments.deep_sea import sweep as deep_sea_sweep
 
 NUM_EPISODES = deep_sea_sweep.NUM_EPISODES
 
 SETTINGS = tuple({'size': n} for n in range(10, 51, 2))
-
+TAGS = ('exploration', 'noise')

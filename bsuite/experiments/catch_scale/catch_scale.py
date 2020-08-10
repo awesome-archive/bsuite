@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,9 +16,7 @@
 # ============================================================================
 """Catch environment with scaled rewards."""
 
-# Import all required packages
-
-from bsuite.experiments.catch import catch
+from bsuite.environments import catch
 from bsuite.experiments.catch_scale import sweep
 from bsuite.utils import wrappers
 

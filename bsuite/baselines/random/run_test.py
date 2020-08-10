@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,22 +16,28 @@
 # ============================================================================
 """Basic test coverage for agent training."""
 
-# Import all required packages
-
-from absl import flags
 from absl.testing import absltest
+from absl.testing import parameterized
 
-from bsuite.baselines.random import run
+from bsuite import bsuite
+from bsuite import sweep
+from bsuite.baselines import experiment
+from bsuite.baselines import random
 
-FLAGS = flags.FLAGS
 
+class RunTest(parameterized.TestCase):
 
-class RunTest(absltest.TestCase):
+  @parameterized.parameters(*sweep.TESTING)
+  def test_run(self, bsuite_id: str):
+    env = bsuite.load_from_id(bsuite_id)
 
-  def test_run(self):
-    FLAGS.num_episodes = 5
-    FLAGS.logging_mode = 'terminal'
-    run.run('catch/0')
+    agent = random.default_agent(
+        env.observation_spec(), env.action_spec())
+
+    experiment.run(
+        agent=agent,
+        environment=env,
+        num_episodes=5)
 
 
 if __name__ == '__main__':

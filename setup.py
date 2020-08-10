@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,38 +16,61 @@
 # ============================================================================
 """Install script for setuptools."""
 
-# Import all required packages
+import imp
 
-from setuptools import find_packages
-from setuptools import setup
+import setuptools
 
-# Additional requirements for bsuite/baselines, excluding OpenAI, Dopamine and
-# JAX examples.
+# Additional requirements for TensorFlow baselines, excluding OpenAI & Dopamine.
+# See baselines/README.md for more information.
 baselines_require = [
     'dm-sonnet',
-    # trfl needs to be in sync with a given TensorFlow version. We depend on
-    # TensorFlow transitively via the "tensorflow" extras_require entry
-    # specified by trfl.
-    'trfl[tensorflow]',
+    'dm-tree',
+    'tensorflow == 2.1',
+    'tensorflow_probability >= 0.8, < 0.9',
+    'trfl',
     'tqdm',
 ]
 
-dependency_links = [
-    'http://github.com/google/dopamine/tarball/master#egg=dopamine_rl',
+# Additional requirements for JAX baselines.
+# See baselines/README.md for more information.
+baselines_jax_require = [
+    'dataclasses',
+    'dm-haiku',
+    'dm-tree',
+    'jax',
+    'jaxlib',
+    'rlax @ git+git://github.com/deepmind/rlax.git#egg=rlax',
+    'tqdm',
 ]
 
+baselines_third_party_require = [
+    'tensorflow == 1.15',
+    'dopamine-rl',
+    'baselines',
+]
 
-setup(
+testing_require = [
+    'mock',
+    'pytest-xdist',
+    'pytype',
+]
+
+setuptools.setup(
     name='bsuite',
     description=('Core RL Behaviour Suite. '
                  'A collection of reinforcement learning experiments.'),
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     author='DeepMind',
     license='Apache License, Version 2.0',
+    version=imp.load_source('_metadata', 'bsuite/_metadata.py').__version__,
     keywords='reinforcement-learning python machine learning',
-    packages=find_packages(),
+    packages=setuptools.find_packages(),
     install_requires=[
         'absl-py',
         'dm_env',
+        'frozendict',
+        'gym',
         'matplotlib',
         'numpy',
         'pandas',
@@ -56,26 +80,23 @@ setup(
         'six',
         'termcolor',
     ],
-    tests_require=[
-        'absl-py',
-        'nose',
-    ],
     extras_require={
         'baselines': baselines_require,
+        'baselines_jax': baselines_jax_require,
+        'baselines_third_party': baselines_third_party_require,
+        'testing': testing_require,
     },
-    test_suite='nose.collector',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX :: Linux',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: MacOS :: MacOS X',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
 )

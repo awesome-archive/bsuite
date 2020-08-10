@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,7 +16,7 @@
 # ============================================================================
 """Analysis for discounting_chain."""
 
-# Import all packages
+from typing import Sequence
 
 from bsuite.experiments.discounting_chain import sweep
 from bsuite.utils import plotting
@@ -24,11 +25,9 @@ import numpy as np
 import pandas as pd
 import plotnine as gg
 
-from typing import Sequence, Text
-
 NUM_EPISODES = sweep.NUM_EPISODES
 BASE_REGRET = 0.08
-TAGS = ('credit_assignment',)
+TAGS = sweep.TAGS
 _HORIZONS = np.array([1, 3, 10, 30, 100])
 
 
@@ -36,7 +35,8 @@ def score(df: pd.DataFrame) -> float:
   """Output a single score for discounting_chain."""
   n_eps = np.minimum(df.episode.max(), sweep.NUM_EPISODES)
   ave_return = df.loc[df.episode == n_eps, 'total_return'].mean() / n_eps
-  return 1. - 10. * (1.1 - ave_return)
+  raw_score = 1. - 10. * (1.1 - ave_return)
+  return np.clip(raw_score, 0, 1)
 
 
 def dc_preprocess(df_in: pd.DataFrame) -> pd.DataFrame:
@@ -49,7 +49,7 @@ def dc_preprocess(df_in: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_learning(df: pd.DataFrame,
-                  sweep_vars: Sequence[Text] = None) -> gg.ggplot:
+                  sweep_vars: Sequence[str] = None) -> gg.ggplot:
   """Plots the average regret through time by optimal_horizon."""
   df = dc_preprocess(df_in=df)
   p = plotting.plot_regret_learning(
@@ -65,7 +65,7 @@ def plot_learning(df: pd.DataFrame,
 
 
 def plot_average(df: pd.DataFrame,
-                 sweep_vars: Sequence[Text] = None) -> gg.ggplot:
+                 sweep_vars: Sequence[str] = None) -> gg.ggplot:
   """Plots the average regret at 1k episodes by optimal_horizon."""
   df = dc_preprocess(df_in=df)
   p = plotting.plot_regret_average(
@@ -80,7 +80,7 @@ def plot_average(df: pd.DataFrame,
 
 
 def plot_seeds(df_in: pd.DataFrame,
-               sweep_vars: Sequence[Text] = None) -> gg.ggplot:
+               sweep_vars: Sequence[str] = None) -> gg.ggplot:
   """Plot the returns through time individually by run."""
   df = dc_preprocess(df_in)
   df['average_return'] = 1.1 - (df.total_regret.diff() / df.episode.diff())

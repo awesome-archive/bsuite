@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,8 +16,6 @@
 # ============================================================================
 """Sweep definition for umbrella_distract experiment."""
 
-# Import all required packages
-
 from bsuite.experiments.umbrella_length import sweep as umbrella_length_sweep
 
 NUM_EPISODES = umbrella_length_sweep.NUM_EPISODES
@@ -27,4 +26,4 @@ _log_spaced.extend([12, 14, 17, 20, 25])
 _log_spaced.extend(range(30, 105, 10))
 
 SETTINGS = tuple({'n_distractor': n} for n in _log_spaced)
-
+TAGS = ('credit_assignment', 'noise')

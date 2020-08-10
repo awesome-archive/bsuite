@@ -1,3 +1,4 @@
+# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -15,9 +16,10 @@
 # ============================================================================
 """Functions to load bsuite environments."""
 
-# Import all packages
+from typing import Any, Mapping, Tuple
 
 from bsuite import sweep
+from bsuite.environments import base
 from bsuite.experiments.bandit import bandit
 from bsuite.experiments.bandit_noise import bandit_noise
 from bsuite.experiments.bandit_scale import bandit_scale
@@ -49,39 +51,39 @@ from bsuite.logging import terminal_logging
 import dm_env
 import termcolor
 
-from typing import Any, Mapping, Text, Tuple
+# Internal imports.
 
 # Mapping from experiment name to environment constructor or load function.
 # Each constructor or load function accepts keyword arguments as defined in
 # each experiment's sweep.py file.
 EXPERIMENT_NAME_TO_ENVIRONMENT = dict(
-    bandit=bandit.SimpleBandit,
+    bandit=bandit.load,
     bandit_noise=bandit_noise.load,
     bandit_scale=bandit_scale.load,
-    cartpole=cartpole.Cartpole,
+    cartpole=cartpole.load,
     cartpole_noise=cartpole_noise.load,
     cartpole_scale=cartpole_scale.load,
     cartpole_swingup=cartpole_swingup.CartpoleSwingup,
-    catch=catch.Catch,
+    catch=catch.load,
     catch_noise=catch_noise.load,
     catch_scale=catch_scale.load,
-    deep_sea=deep_sea.DeepSea,
+    deep_sea=deep_sea.load,
     deep_sea_stochastic=deep_sea_stochastic.load,
-    discounting_chain=discounting_chain.DiscountingChain,
+    discounting_chain=discounting_chain.load,
     memory_len=memory_len.load,
     memory_size=memory_size.load,
-    mnist=mnist.MNISTBandit,
+    mnist=mnist.load,
     mnist_noise=mnist_noise.load,
     mnist_scale=mnist_scale.load,
-    mountain_car=mountain_car.MountainCar,
+    mountain_car=mountain_car.load,
     mountain_car_noise=mountain_car_noise.load,
     mountain_car_scale=mountain_car_scale.load,
     umbrella_distract=umbrella_distract.load,
-    umbrella_length=umbrella_length.UmbrellaChain,
+    umbrella_length=umbrella_length.load,
 )
 
 
-def unpack_bsuite_id(bsuite_id: Text) -> Tuple[Text, int]:
+def unpack_bsuite_id(bsuite_id: str) -> Tuple[str, int]:
   """Returns the experiment name and setting index given a bsuite_id."""
   parts = bsuite_id.split(sweep.SEPARATOR)
   assert len(parts) == 2
@@ -91,23 +93,26 @@ def unpack_bsuite_id(bsuite_id: Text) -> Tuple[Text, int]:
 
 
 def load(
-    experiment_name: Text,
-    kwargs: Mapping[Text, Any],
-) -> dm_env.Environment:
+    experiment_name: str,
+    kwargs: Mapping[str, Any],
+) -> base.Environment:
   """Returns a bsuite environment given an experiment name and settings."""
   return EXPERIMENT_NAME_TO_ENVIRONMENT[experiment_name](**kwargs)
 
 
-def load_from_id(bsuite_id: Text) -> dm_env.Environment:
+def load_from_id(bsuite_id: str) -> base.Environment:
   """Returns a bsuite environment given a bsuite_id."""
   kwargs = sweep.SETTINGS[bsuite_id]
   experiment_name, _ = unpack_bsuite_id(bsuite_id)
-  return load(experiment_name, kwargs)
+  env = load(experiment_name, kwargs)
+  termcolor.cprint(
+      f'Loaded bsuite_id: {bsuite_id}.', color='white', attrs=['bold'])
+  return env
 
 
-def load_and_record(bsuite_id: Text,
-                    save_path: Text,
-                    logging_mode: Text = 'csv',
+def load_and_record(bsuite_id: str,
+                    save_path: str,
+                    logging_mode: str = 'csv',
                     overwrite: bool = False) -> dm_env.Environment:
   """Returns a bsuite environment wrapped with either CSV or SQLite logging."""
   if logging_mode == 'csv':
@@ -121,13 +126,12 @@ def load_and_record(bsuite_id: Text,
   elif logging_mode == 'terminal':
     return load_and_record_to_terminal(bsuite_id)
   else:
-    raise ValueError(
-        ('Unrecognised logging_mode "{}". '
-         'Must be "csv", "sqlite", or "terminal".').format(logging_mode))
+    raise ValueError((f'Unrecognised logging_mode "{logging_mode}". '
+                      'Must be "csv", "sqlite", or "terminal".'))
 
 
-def load_and_record_to_sqlite(bsuite_id: Text,
-                              db_path: Text) -> dm_env.Environment:
+def load_and_record_to_sqlite(bsuite_id: str,
+                              db_path: str) -> dm_env.Environment:
   """Returns a bsuite environment that saves results to an SQLite database.
 
   The returned environment will automatically save the results required for
@@ -137,7 +141,7 @@ def load_and_record_to_sqlite(bsuite_id: Text,
   manually inspect the results use:
 
   ```python
-  from bsuite.utils import sqlite_load
+  from bsuite.logging import sqlite_load
 
   results_df, sweep_vars = sqlite_load.load_bsuite('/path/to/database.db')
   ```
@@ -156,7 +160,7 @@ def load_and_record_to_sqlite(bsuite_id: Text,
   raw_env = load_from_id(bsuite_id)
   experiment_name, setting_index = unpack_bsuite_id(bsuite_id)
   termcolor.cprint(
-      'Logging results to SQLite database in {}.'.format(db_path),
+      f'Logging results to SQLite database in {db_path}.',
       color='yellow',
       attrs=['bold'])
   return sqlite_logging.wrap_environment(
@@ -167,8 +171,8 @@ def load_and_record_to_sqlite(bsuite_id: Text,
   )
 
 
-def load_and_record_to_csv(bsuite_id: Text,
-                           results_dir: Text,
+def load_and_record_to_csv(bsuite_id: str,
+                           results_dir: str,
                            overwrite: bool = False) -> dm_env.Environment:
   """Returns a bsuite environment that saves results to CSV.
 
@@ -176,7 +180,7 @@ def load_and_record_to_csv(bsuite_id: Text,
   manually inspect the results use:
 
   ```python
-  from bsuite.utils import csv_load
+  from bsuite.logging import csv_load
 
   results_df, sweep_vars = csv_load.load_bsuite(results_dir)
   ```
@@ -193,8 +197,7 @@ def load_and_record_to_csv(bsuite_id: Text,
   """
   raw_env = load_from_id(bsuite_id)
   termcolor.cprint(
-      'Logging results to CSV file for each bsuite_id in {}.'.format(
-          results_dir),
+      f'Logging results to CSV file for each bsuite_id in {results_dir}.',
       color='yellow',
       attrs=['bold'])
   return csv_logging.wrap_environment(
@@ -205,7 +208,7 @@ def load_and_record_to_csv(bsuite_id: Text,
   )
 
 
-def load_and_record_to_terminal(bsuite_id: Text) -> dm_env.Environment:
+def load_and_record_to_terminal(bsuite_id: str) -> dm_env.Environment:
   """Returns a bsuite environment that logs to terminal."""
   raw_env = load_from_id(bsuite_id)
   termcolor.cprint(
